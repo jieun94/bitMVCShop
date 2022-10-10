@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+		PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ReviewMapper">
+
+	<resultMap id="reviewSelectMap" type="review">
+		<result property="reviewNo" 				column="review_no" 			jdbcType="INTEGER"/>
+		<result property="reviewTran.tranNo"		column="tran_no" 			jdbcType="INTEGER" />
+		<result property="reviewBuyer.userId" 		column="buyer_id" 			jdbcType="VARCHAR" />
+		<result property="reviewBuyer.userName" 	column="user_name" 			jdbcType="VARCHAR" />
+		<result property="reviewName"				column="review_name" 		jdbcType="VARCHAR"/>
+		<result property="reviewDetail"				column="review_detail" 		jdbcType="VARCHAR"/>
+		<result property="reviewDate"				column="reg_date"			jdbcType="DATE"/>
+		<result property="reviewFileName" 			column="image_file"			jdbcType="VARCHAR"/>	
+		
+		<association property="reviewProd"  javaType="product">
+			<id 	property="prodNo" 		column="prod_no" 			jdbcType="NUMERIC"/>
+			<result property="prodName" 	column="prod_name" 			jdbcType="VARCHAR"/>
+		</association>
+	</resultMap>
+	
+	<insert 	id="insertReview"		parameterType="review" >
+	 	INSERT
+		INTO review( review_no , tran_no, prod_no, buyer_id, review_name, review_detail, reg_date, image_file) 
+		VALUES	 (seq_review_review_no.NEXTVAL , #{reviewTran.tranNo} , #{reviewProd.prodNo} , #{reviewBuyer.userId} 
+					, #{reviewName}, #{reviewDetail:VARCHAR} , SYSDATE, #{reviewFileName:VARCHAR})
+	</insert>
+	
+	<select  id="getReviewList"  parameterType="hashmap"	resultMap="reviewSelectMap">
+		SELECT * 
+		FROM (		SELECT inner_table.* ,  ROWNUM AS row_seq  	
+					FROM (		SELECT 
+								r.*, u.user_name
+								FROM review r, users u
+								WHERE r.prod_no = #{prodNo}
+								AND r.buyer_id = u.user_id
+								ORDER BY r.reg_date DESC ) inner_table 	
+				WHERE ROWNUM &lt;= #{search.endRowNum} )
+		WHERE row_seq BETWEEN #{search.startRowNum} AND #{search.endRowNum}
+	</select>
+	
+	<select id="getReview" parameterType="int" resultMap="reviewSelectMap">
+		SELECT * FROM review
+		WHERE review_no = #{value}
+	</select>
+	
+	<select  id="getTotalCount"  parameterType="int"	 resultType="int">
+	  	SELECT COUNT(*)
+	  	FROM(	SELECT *
+						FROM review
+						WHERE prod_no = #{value} ) countTable						
+	 </select>
+	
+</mapper>
